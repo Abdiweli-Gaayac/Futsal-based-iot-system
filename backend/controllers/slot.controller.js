@@ -23,13 +23,13 @@ function validateSlotTimes(startTime, endTime) {
   const endMinutes = timeToMinutes(endTime);
 
   // // Minimum duration 30 minutes, maximum 180 minutes (3 hours)
-  const duration = endMinutes - startMinutes;
-  if (duration < 30) {
-    throw new Error("Slot duration must be at least 30 minutes");
-  }
-  if (duration > 180) {
-    throw new Error("Slot duration cannot exceed 3 hours");
-  }
+  // const duration = endMinutes - startMinutes;
+  // if (duration < 30) {
+  //   throw new Error("Slot duration must be at least 30 minutes");
+  // }
+  // if (duration > 180) {
+  //   throw new Error("Slot duration cannot exceed 3 hours");
+  // }
 
   return true;
 }

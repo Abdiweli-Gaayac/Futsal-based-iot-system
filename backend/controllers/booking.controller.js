@@ -122,6 +122,22 @@ export const getClientBookings = async (req, res, next) => {
   }
 };
 
+// Helper function to convert time to minutes
+function timeToMinutes(time) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+// Helper function to subtract minutes from time
+function subtractMinutes(time, mins) {
+  const totalMinutes = timeToMinutes(time) - mins;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}`;
+}
+
 export const verifyBookingOTP = async (req, res, next) => {
   try {
     const { otp } = req.body;
@@ -147,19 +163,23 @@ export const verifyBookingOTP = async (req, res, next) => {
 
     const bookingDate = booking.date.toISOString().split("T")[0];
 
-    // Calculate slot duration in minutes
-    const startMinutes = timeToMinutes(booking.slotId.startTime);
-    const endMinutes = timeToMinutes(booking.slotId.endTime);
-    const slotDuration = endMinutes - startMinutes;
+    // Get time values
+    const slotStartTime = booking.slotId.startTime;
+    const slotEndTime = booking.slotId.endTime;
 
-    // Calculate remaining duration
+    // Calculate slot duration and remaining time in minutes
+    const startMinutes = timeToMinutes(slotStartTime);
+    const endMinutes = timeToMinutes(slotEndTime);
     const currentMinutes = timeToMinutes(currentTime);
+
+    const slotDuration = endMinutes - startMinutes;
     const remainingMinutes = endMinutes - currentMinutes;
+
     console.log("\n📅 Booking Details:");
     console.log("- Booking Date:", bookingDate);
     console.log(
       "- Slot Time:",
-      `${booking.slotId.startTime}-${booking.slotId.endTime} (${slotDuration} minutes)`
+      `${slotStartTime}-${slotEndTime} (${slotDuration} minutes)`
     );
     console.log("- Remaining Time:", `${remainingMinutes} minutes`);
     console.log("- Payment Status:", booking.paymentStatus);
@@ -187,22 +207,16 @@ export const verifyBookingOTP = async (req, res, next) => {
       throw error;
     }
 
-    // Check time slot with 5-minute window
-    const slotStartTime = booking.slotId.startTime;
-    const slotEndTime = booking.slotId.endTime;
-    const earlyWindow = subtractMinutes(slotStartTime, 5); // 5 minutes before start
-    const lateWindow = subtractMinutes(slotEndTime, 5); // 5 minutes before end
-
+    // Check if current time is within the slot time (no early access)
     console.log("\n⏰ Time Comparison:");
     console.log("- Current Time:", currentTime);
-    console.log("- Valid Window:", `${earlyWindow}-${lateWindow}`);
-    console.log("- Original Slot:", `${slotStartTime}-${slotEndTime}`);
+    console.log("- Slot Time:", `${slotStartTime}-${slotEndTime}`);
 
-    if (currentTime < earlyWindow || currentTime > lateWindow) {
+    if (currentTime < slotStartTime || currentTime >= slotEndTime) {
       console.log("❌ Error: Outside time window");
       const error = new Error(
         `Access denied. Your slot is ${slotStartTime}-${slotEndTime}. ` +
-          `You can enter between ${earlyWindow}-${lateWindow} only`
+          `You can only enter during your exact slot time.`
       );
       error.statusCode = 400;
       error.code = 5; // Add error code
@@ -221,7 +235,7 @@ export const verifyBookingOTP = async (req, res, next) => {
       await booking.save();
       console.log("- OTP marked as used (first access)");
 
-      // Send detailed response on first access
+      // Send detailed response on first access with correct remaining time
       res.status(200).json({
         success: true,
         code: 6, // Success code for first access
@@ -231,7 +245,6 @@ export const verifyBookingOTP = async (req, res, next) => {
           duration: remainingMinutes > 0 ? remainingMinutes : 0,
           fullDuration: slotDuration,
           clientId: booking.clientId,
-          validWindow: `${earlyWindow}-${lateWindow}`,
           date: today,
         },
       });
@@ -253,28 +266,6 @@ export const verifyBookingOTP = async (req, res, next) => {
     });
   }
 };
-
-// Helper functions to handle time calculations
-function addMinutes(time, minutes) {
-  const [hours, mins] = time.split(":").map(Number);
-  const date = new Date();
-  date.setHours(hours, mins + minutes);
-  return date.toTimeString().split(" ")[0].slice(0, 5);
-}
-
-function subtractMinutes(time, minutes) {
-  const [hours, mins] = time.split(":").map(Number);
-  const date = new Date();
-  date.setHours(hours, mins - minutes);
-  return date.toTimeString().split(" ")[0].slice(0, 5);
-}
-
-// Add helper function to convert time to minutes
-function timeToMinutes(time) {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
 // Manager routes
 export const getAllBookings = async (req, res, next) => {
   try {
