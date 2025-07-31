@@ -253,12 +253,10 @@ export const deleteSlot = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Check if slot has any bookings
+    // Check if slot has any bookings and delete them
     const hasBookings = await Booking.exists({ slotId: id });
     if (hasBookings) {
-      const error = new Error("Cannot delete slot with existing bookings");
-      error.statusCode = 400;
-      throw error;
+      await Booking.deleteMany({ slotId: id });
     }
 
     const slot = await Slot.findByIdAndDelete(id);
