@@ -4,7 +4,6 @@ import 'package:futsal/services/slot_service.dart';
 import 'package:futsal/services/booking_service.dart';
 import 'package:futsal/services/subscription_service.dart';
 import 'package:intl/intl.dart';
-import 'package:futsal/utils/timezone.dart';
 
 import 'package:futsal/screens/client/my_bookings_screen.dart';
 
@@ -113,7 +112,7 @@ class _SlotsScreenState extends State<SlotsScreen> {
               context,
               title: 'Single Booking',
               subtitle: 'Book this slot for one day only',
-              price: '${slot.price.toStringAsFixed(2)}',
+              price: '\$${slot.price.toStringAsFixed(2)}',
               icon: Icons.calendar_today,
               onTap: () {
                 Navigator.pop(context);
@@ -541,7 +540,7 @@ class _SlotsScreenState extends State<SlotsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Price: ${slot.price.toStringAsFixed(2)}',
+              'Price: \$${slot.price.toStringAsFixed(2)}',
               style: TextStyle(color: Colors.green.shade700),
             ),
             if (slot.isBooked == true && slot.bookedBy != null)

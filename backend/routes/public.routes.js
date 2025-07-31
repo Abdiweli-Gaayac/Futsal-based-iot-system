@@ -4,6 +4,7 @@ import {
   createBooking,
   getClientBookings,
   verifyBookingOTP,
+  testTimezone,
 } from "../controllers/booking.controller.js";
 import { isAuthenticated } from "../middlewares/auth.middleware.js";
 
@@ -18,5 +19,6 @@ router
   .get(isAuthenticated, getClientBookings)
   .post(isAuthenticated, createBooking);
 router.post("/verify-otp", verifyBookingOTP);
+router.get("/test-timezone", testTimezone);
 
 export default router;

@@ -83,7 +83,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
               _buildDetailRow(
                   'Date', DateFormat('MMM dd, yyyy').format(bookingDate)),
               _buildDetailRow('Time',
-                  '${booking.slot!.startTime} - ${booking.slot!.endTime}'),
+                  '${booking.slot?.startTime ?? 'N/A'} - ${booking.slot?.endTime ?? 'N/A'}'),
               _buildDetailRow(
                   'Amount', '\$${booking.amount.toStringAsFixed(2)}'),
               _buildDetailRow(
@@ -303,7 +303,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${booking.slot!.startTime} - ${booking.slot!.endTime}',
+                        '${booking.slot?.startTime ?? 'N/A'} - ${booking.slot?.endTime ?? 'N/A'}',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 14,
@@ -338,7 +338,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${booking.amount.toStringAsFixed(2)}',
+                      '\$${booking.amount.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,

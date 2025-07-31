@@ -4,49 +4,39 @@ import Booking from "../models/booking.model.js";
 import { initiateWaafiPayment } from "../services/payment.service.js";
 import User from "../models/user.model.js";
 import { generateOTP } from "../utils/otp.js";
-import { 
-  getSomaliaTime, 
-  toSomaliaTime, 
-  somaliaToUTC, 
-  utcToSomalia, 
-  getSomaliaDateString, 
-  getSomaliaDateStringFromDate, 
-  isTodayInSomalia, 
-  isPastDateInSomalia, 
-  isValidBookingDateInSomalia,
-  getSomaliaTimestamp 
-} from "../utils/timezone.js";
 
-// Helper function to convert date string to Somalia timezone and then to UTC for storage
-const convertToSomaliaThenUTC = (dateString) => {
-  // If dateString is already a Date object, convert it to Somalia time then UTC
+// Helper function to convert date string to UTC Date object
+const convertToUTCDate = (dateString) => {
+  // If dateString is already a Date object, return it
   if (dateString instanceof Date) {
-    return somaliaToUTC(toSomaliaTime(dateString));
+    return dateString;
   }
 
-  // If it's a string in YYYY-MM-DD format, create Somalia date then convert to UTC
+  // If it's a string in YYYY-MM-DD format, create UTC date
   if (typeof dateString === "string" && dateString.includes("-")) {
-    const somaliaDate = toSomaliaTime(dateString);
-    return somaliaToUTC(somaliaDate);
+    const [year, month, day] = dateString.split("-").map(Number);
+    // Create UTC date (midnight UTC)
+    return new Date(Date.UTC(year, month - 1, day));
   }
 
-  // For other formats, parse and convert to Somalia time then UTC
+  // For other formats, parse and convert to UTC
   const date = new Date(dateString);
-  const somaliaDate = toSomaliaTime(date);
-  return somaliaToUTC(somaliaDate);
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+  );
 };
 
-// Helper function to get day of week (0-6, Sunday-Saturday)
+// Helper function to get day of week (0-6, Sunday-Saturday) - using UTC
 const getDayOfWeek = (date) => {
-  return new Date(date).getDay();
+  return new Date(date).getUTCDay();
 };
 
-// Helper function to get next occurrence of a day of week
+// Helper function to get next occurrence of a day of week - using UTC
 const getNextOccurrence = (dayOfWeek, startDate = new Date()) => {
-  const currentDay = startDate.getDay();
+  const currentDay = startDate.getUTCDay();
   const daysUntilNext = (dayOfWeek - currentDay + 7) % 7;
   const nextDate = new Date(startDate);
-  nextDate.setDate(startDate.getDate() + daysUntilNext);
+  nextDate.setUTCDate(startDate.getUTCDate() + daysUntilNext);
   return nextDate;
 };
 
@@ -57,14 +47,18 @@ const generateMonthlyDates = (startDate, weeklyDay, months = 1) => {
 
   for (let month = 0; month < months; month++) {
     const monthStart = new Date(
-      currentDate.getUTCFullYear(),
-      currentDate.getUTCMonth() + month,
-      1
+      Date.UTC(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth() + month,
+        1
+      )
     );
     const monthEnd = new Date(
-      currentDate.getUTCFullYear(),
-      currentDate.getUTCMonth() + month + 1,
-      0
+      Date.UTC(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth() + month + 1,
+        0
+      )
     );
 
     let currentWeekDate = getNextOccurrence(weeklyDay, monthStart);
@@ -118,9 +112,11 @@ export const createSubscription = async (req, res, next) => {
       throw error;
     }
 
-    // Validate start date and convert to Somalia timezone then UTC
-    const startDateTime = convertToSomaliaThenUTC(startDate);
-    if (!isValidBookingDateInSomalia(startDate)) {
+    // Validate start date and convert to UTC
+    const startDateTime = convertToUTCDate(startDate);
+    const now = new Date();
+    now.setUTCHours(0, 0, 0, 0);
+    if (startDateTime < now) {
       const error = new Error("Start date cannot be in the past");
       error.statusCode = 400;
       throw error;
@@ -358,9 +354,11 @@ export const createSubscriptionByManager = async (req, res, next) => {
       throw error;
     }
 
-    // Validate start date and convert to Somalia timezone then UTC
-    const startDateTime = convertToSomaliaThenUTC(startDate);
-    if (!isValidBookingDateInSomalia(startDate)) {
+    // Validate start date and convert to UTC
+    const startDateTime = convertToUTCDate(startDate);
+    const now = new Date();
+    now.setUTCHours(0, 0, 0, 0);
+    if (startDateTime < now) {
       const error = new Error("Start date cannot be in the past");
       error.statusCode = 400;
       throw error;
@@ -413,7 +411,7 @@ export const createSubscriptionByManager = async (req, res, next) => {
       lastBillingDate: new Date(),
       nextBillingDate: new Date(startDateTime),
       paymentStatus: "paid",
-      referenceId: `MGR-SUB-${getSomaliaTimestamp()}`,
+      referenceId: `MGR-SUB-${Date.now()}`,
     });
 
     // Create individual bookings for the subscription period

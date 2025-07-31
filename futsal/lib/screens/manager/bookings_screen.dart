@@ -55,7 +55,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
               final dateCompare = a.localDate.compareTo(b.localDate);
               if (dateCompare != 0) return dateCompare;
               // Then by time if same date
-              return a.slot!.startTime.compareTo(b.slot!.startTime);
+              return (a.slot?.startTime ?? '').compareTo(b.slot?.startTime ?? '');
             });
           _isLoading = false;
         });
@@ -116,9 +116,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
               _buildDetailRow(
                   'Date', DateFormat('MMM dd, yyyy').format(bookingDate)),
               _buildDetailRow('Time',
-                  '${booking.slot!.startTime} - ${booking.slot!.endTime}'),
-              _buildDetailRow('Client', booking.client!.name),
-              _buildDetailRow('Phone', booking.client!.phone),
+                  '${booking.slot?.startTime ?? 'N/A'} - ${booking.slot?.endTime ?? 'N/A'}'),
+              _buildDetailRow('Client', booking.client?.name ?? 'Unknown'),
+              _buildDetailRow('Phone', booking.client?.phone ?? 'N/A'),
               _buildDetailRow(
                   'Amount', '\$${booking.amount.toStringAsFixed(2)}'),
               _buildDetailRow('Status', booking.paymentStatus.toUpperCase(),
@@ -761,7 +761,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${booking.slot!.startTime} - ${booking.slot!.endTime}',
+                        '${booking.slot?.startTime ?? 'N/A'} - ${booking.slot?.endTime ?? 'N/A'}',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 14,
@@ -804,7 +804,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      ' \$${booking.amount.toStringAsFixed(2)}',
+                      '\$${booking.amount.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,

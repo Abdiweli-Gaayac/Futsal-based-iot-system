@@ -10,4 +10,5 @@ export const {
   MERCHANT_U_ID,
   MERCHANT_API_USER_ID,
   MERCHANT_API_KEY,
+  BUSINESS_TIMEZONE="Africa/Mogadishu"
 } = process.env;

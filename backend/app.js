@@ -10,7 +10,6 @@ import { testWaafiPayment } from "./controllers/payment-test.controller.js";
 
 import connectToDatabase from "./database/db.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
-import { getSomaliaTime } from "./utils/timezone.js";
 
 const app = express();
 
@@ -23,10 +22,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// Add basic request logging with Somalia timezone
+// Add basic request logging
 app.use((req, res, next) => {
-  const somaliaTime = getSomaliaTime();
-  console.log(`${somaliaTime.toISOString()} (Somalia) - ${req.method} ${req.url}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
 });
 app.use(express.json());

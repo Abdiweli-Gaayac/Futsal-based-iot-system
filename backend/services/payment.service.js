@@ -1,5 +1,6 @@
 // For testing: always return success without making a real payment
 import crypto from "crypto";
+import { getSomaliTime } from "../utils/timezone.js";
 
 export const initiateWaafiPayment = async (phone, amount, bookingId) => {
   // Simulate a successful payment response for testing
@@ -14,7 +15,7 @@ export const initiateWaafiPayment = async (phone, amount, bookingId) => {
       phone,
       amount,
       bookingId,
-      timestamp: new Date().toISOString(),
+      timestamp: getSomaliTime().toISOString(), // Use business timezone
     },
   };
 };

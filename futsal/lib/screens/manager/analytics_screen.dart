@@ -564,7 +564,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         const SizedBox(height: 20),
                         Center(
                           child: Text(
-                            'Last updated: ${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())}',
+                            'Last updated: 24${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())}',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 12,
@@ -690,7 +690,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '${_totalRevenue.toStringAsFixed(2)}',
+              '\$${_totalRevenue.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,

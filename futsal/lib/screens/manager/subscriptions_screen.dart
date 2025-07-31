@@ -606,7 +606,7 @@ class _ManagerSubscriptionsScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${subscription.dayOfWeekName}s • \u0024${subscription.monthlyAmount.toStringAsFixed(2)}/month',
+              '${subscription.dayOfWeekName}s • \$${subscription.monthlyAmount.toStringAsFixed(2)}/month',
               style: TextStyle(
                 color: Colors.green.shade700,
               ),

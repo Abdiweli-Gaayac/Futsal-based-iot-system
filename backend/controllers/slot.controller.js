@@ -43,7 +43,7 @@ export const getPublicSlots = async (req, res, next) => {
     // If date is provided, check booking status for each slot
     if (date) {
       const selectedDate = new Date(date);
-      selectedDate.setHours(0, 0, 0, 0);
+      selectedDate.setUTCHours(0, 0, 0, 0); // Use UTC for consistent date boundaries
 
       // Get all bookings for the selected date
       const bookings = await Booking.find({

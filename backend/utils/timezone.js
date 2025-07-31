@@ -1,130 +1,76 @@
-// Timezone utilities for Somalia (EAT - East Africa Time)
-// Somalia is UTC+3
+import moment from "moment-timezone";
+import { BUSINESS_TIMEZONE } from "../config/env.js";
 
-const SOMALIA_TIMEZONE = 'Africa/Mogadishu';
+// Configuration
+const BUSINESS_TIMEZONE_NAME = BUSINESS_TIMEZONE || "Africa/Mogadishu";
 
 /**
- * Get current time in Somalia timezone
- * @returns {Date} Current date/time in Somalia timezone
+ * Get current time in business timezone (default: Somali)
+ * @returns {moment.Moment} Current time in business timezone
  */
-export const getSomaliaTime = () => {
-  const now = new Date();
-  const somaliaTime = new Date(now.toLocaleString("en-US", {timeZone: SOMALIA_TIMEZONE}));
-  return somaliaTime;
+export const getSomaliTime = () => {
+  return moment().tz(BUSINESS_TIMEZONE_NAME);
 };
 
 /**
- * Convert a date to Somalia timezone
- * @param {Date|string} date - Date to convert
- * @returns {Date} Date in Somalia timezone
+ * Get current time in business timezone as HH:MM string
+ * @returns {string} Current time in HH:MM format (business timezone)
  */
-export const toSomaliaTime = (date) => {
-  const inputDate = new Date(date);
-  return new Date(inputDate.toLocaleString("en-US", {timeZone: SOMALIA_TIMEZONE}));
+export const getSomaliTimeString = () => {
+  return getSomaliTime().format("HH:mm");
 };
 
 /**
- * Convert Somalia time to UTC for storage
- * @param {Date|string} somaliaDate - Date in Somalia timezone
- * @returns {Date} Date in UTC
+ * Get current date in business timezone as YYYY-MM-DD string
+ * @returns {string} Current date in YYYY-MM-DD format (business timezone)
  */
-export const somaliaToUTC = (somaliaDate) => {
-  const date = new Date(somaliaDate);
-  // Create a date string in Somalia timezone
-  const somaliaString = date.toLocaleString("en-US", {timeZone: SOMALIA_TIMEZONE});
-  // Parse it back to get the UTC equivalent
-  const utcDate = new Date(somaliaString);
-  return utcDate;
+export const getSomaliDateString = () => {
+  return getSomaliTime().format("YYYY-MM-DD");
 };
 
 /**
- * Convert UTC date to Somalia timezone for display
- * @param {Date|string} utcDate - Date in UTC
- * @returns {Date} Date in Somalia timezone
+ * Convert a UTC date to business timezone
+ * @param {Date|string} utcDate - UTC date to convert
+ * @returns {moment.Moment} Date in business timezone
  */
-export const utcToSomalia = (utcDate) => {
-  const date = new Date(utcDate);
-  return new Date(date.toLocaleString("en-US", {timeZone: SOMALIA_TIMEZONE}));
+export const convertUTCToSomali = (utcDate) => {
+  return moment.utc(utcDate).tz(BUSINESS_TIMEZONE_NAME);
 };
 
 /**
- * Get current Somalia date in YYYY-MM-DD format
- * @returns {string} Current date in Somalia timezone as YYYY-MM-DD
+ * Check if server is already in business timezone
+ * @returns {boolean} True if server timezone matches business timezone
  */
-export const getSomaliaDateString = () => {
-  const somaliaTime = getSomaliaTime();
-  return somaliaTime.toISOString().split('T')[0];
+export const isServerInSomaliTimezone = () => {
+  const serverTimezone = moment.tz.guess();
+  return serverTimezone === BUSINESS_TIMEZONE_NAME;
 };
 
 /**
- * Get Somalia date string from a date
- * @param {Date|string} date - Date to convert
- * @returns {string} Date in Somalia timezone as YYYY-MM-DD
+ * Get timezone information for debugging
+ * @returns {object} Timezone information
  */
-export const getSomaliaDateStringFromDate = (date) => {
-  const somaliaTime = toSomaliaTime(date);
-  return somaliaTime.toISOString().split('T')[0];
+export const getTimezoneInfo = () => {
+  const somaliTime = getSomaliTime();
+  const serverTime = moment();
+  
+  return {
+    serverTimezone: moment.tz.guess(),
+    businessTimezone: BUSINESS_TIMEZONE_NAME,
+    serverTime: serverTime.format("YYYY-MM-DD HH:mm:ss"),
+    businessTime: somaliTime.format("YYYY-MM-DD HH:mm:ss"),
+    isSameTimezone: isServerInSomaliTimezone(),
+    timeDifference: somaliTime.diff(serverTime, "hours", true)
+  };
 };
 
 /**
- * Check if a date is today in Somalia timezone
- * @param {Date|string} date - Date to check
- * @returns {boolean} True if date is today in Somalia timezone
+ * Validate if a time string is within Somali business hours (optional)
+ * @param {string} timeString - Time in HH:MM format
+ * @returns {boolean} True if within business hours
  */
-export const isTodayInSomalia = (date) => {
-  const somaliaToday = getSomaliaDateString();
-  const somaliaDate = getSomaliaDateStringFromDate(date);
-  return somaliaToday === somaliaDate;
-};
-
-/**
- * Check if a date is in the past in Somalia timezone
- * @param {Date|string} date - Date to check
- * @returns {boolean} True if date is in the past in Somalia timezone
- */
-export const isPastDateInSomalia = (date) => {
-  const somaliaToday = getSomaliaTime();
-  const somaliaDate = toSomaliaTime(date);
-  somaliaToday.setHours(0, 0, 0, 0);
-  somaliaDate.setHours(0, 0, 0, 0);
-  return somaliaDate < somaliaToday;
-};
-
-/**
- * Get Somalia time string in HH:MM format
- * @param {Date|string} date - Date to convert
- * @returns {string} Time in HH:MM format in Somalia timezone
- */
-export const getSomaliaTimeString = (date) => {
-  const somaliaTime = toSomaliaTime(date);
-  return somaliaTime.toTimeString().slice(0, 5);
-};
-
-/**
- * Create a date object for a specific date in Somalia timezone
- * @param {string} dateString - Date string in YYYY-MM-DD format
- * @returns {Date} Date object representing the date in Somalia timezone
- */
-export const createSomaliaDate = (dateString) => {
-  const [year, month, day] = dateString.split('-').map(Number);
-  // Create date in Somalia timezone
-  const somaliaDate = new Date(year, month - 1, day);
-  return somaliaDate;
-};
-
-/**
- * Validate if a booking date is valid (not in past) in Somalia timezone
- * @param {Date|string} date - Date to validate
- * @returns {boolean} True if date is valid for booking
- */
-export const isValidBookingDateInSomalia = (date) => {
-  return !isPastDateInSomalia(date);
-};
-
-/**
- * Get current Somalia timestamp
- * @returns {number} Current timestamp in Somalia timezone
- */
-export const getSomaliaTimestamp = () => {
-  return getSomaliaTime().getTime();
+export const isWithinSomaliBusinessHours = (timeString) => {
+  const [hours] = timeString.split(":").map(Number);
+  // Assuming business hours are 6 AM to 11 PM
+  return hours >= 6 && hours < 23;
 }; 

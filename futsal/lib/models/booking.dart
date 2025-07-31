@@ -1,6 +1,5 @@
 import 'package:futsal/models/slot.dart';
 import 'package:futsal/models/user.dart';
-import 'package:futsal/utils/timezone.dart';
 
 class Booking {
   final String id;
@@ -31,36 +30,27 @@ class Booking {
     this.client,
   });
 
-  // Helper method to get Somalia date from UTC date string
-  DateTime get somaliaDate {
-    // Parse the UTC date string and convert to Somalia timezone
-    final utcDate = DateTime.parse(date);
-    return SomaliaTimezone.utcToSomalia(utcDate);
-  }
-
-  // Helper method to get date string in YYYY-MM-DD format for Somalia timezone
-  String get somaliaDateString {
-    final somalia = somaliaDate;
-    return '${somalia.year.toString().padLeft(4, '0')}-'
-        '${somalia.month.toString().padLeft(2, '0')}-'
-        '${somalia.day.toString().padLeft(2, '0')}';
-  }
-
-  // Helper method to get local date from UTC date string (for backward compatibility)
+  // Helper method to get local date from UTC date string
   DateTime get localDate {
-    return somaliaDate;
+    // Parse the UTC date string and convert to local timezone
+    final utcDate = DateTime.parse(date);
+    return utcDate.toLocal();
   }
 
-  // Helper method to get date string in YYYY-MM-DD format for local timezone (for backward compatibility)
+  // Helper method to get date string in YYYY-MM-DD format for local timezone
   String get localDateString {
-    return somaliaDateString;
+    final local = localDate;
+    return '${local.year.toString().padLeft(4, '0')}-'
+        '${local.month.toString().padLeft(2, '0')}-'
+        '${local.day.toString().padLeft(2, '0')}';
   }
 
   factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(
       id: json['_id'],
-      clientId:
-          json['clientId'] is Map ? json['clientId']['_id'] : json['clientId'],
+      clientId: json['clientId'] != null && json['clientId'] is Map 
+          ? json['clientId']['_id'] 
+          : json['clientId'] ?? '',
       slotId: json['slotId'] is Map ? json['slotId']['_id'] : json['slotId'],
       date: json['date'],
       amount: json['amount'].toDouble(),
@@ -70,7 +60,9 @@ class Booking {
       isUsed: json['isUsed'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
       slot: json['slotId'] is Map ? Slot.fromJson(json['slotId']) : null,
-      client: json['clientId'] is Map ? User.fromJson(json['clientId']) : null,
+      client: json['clientId'] != null && json['clientId'] is Map 
+          ? User.fromJson(json['clientId']) 
+          : null,
     );
   }
 }

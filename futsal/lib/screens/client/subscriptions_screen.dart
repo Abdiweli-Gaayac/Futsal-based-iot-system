@@ -320,7 +320,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '\$${subscription.monthlyAmount.toStringAsFixed(2)}',
+                          '\u0024${subscription.monthlyAmount.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

@@ -4,41 +4,38 @@ import { initiateWaafiPayment } from "../services/payment.service.js";
 import { generateOTP } from "../utils/otp.js";
 import User from "../models/user.model.js";
 import { 
-  getSomaliaTime, 
-  toSomaliaTime, 
-  somaliaToUTC, 
-  utcToSomalia, 
-  getSomaliaDateString, 
-  getSomaliaDateStringFromDate, 
-  isTodayInSomalia, 
-  isPastDateInSomalia, 
-  isValidBookingDateInSomalia,
-  getSomaliaTimestamp
+  getSomaliTime, 
+  getSomaliTimeString, 
+  getSomaliDateString, 
+  getTimezoneInfo 
 } from "../utils/timezone.js";
+import { EnhancedTimezone } from "../utils/enhanced_timezone.js";
 
-// Helper function to convert date string to Somalia timezone and then to UTC for storage
-const convertToSomaliaThenUTC = (dateString) => {
-  // If dateString is already a Date object, convert it to Somalia time then UTC
+// Helper function to convert date string to UTC Date object
+const convertToUTCDate = (dateString) => {
+  // If dateString is already a Date object, return it
   if (dateString instanceof Date) {
-    return somaliaToUTC(toSomaliaTime(dateString));
+    return dateString;
   }
 
-  // If it's a string in YYYY-MM-DD format, create Somalia date then convert to UTC
+  // If it's a string in YYYY-MM-DD format, create UTC date
   if (typeof dateString === "string" && dateString.includes("-")) {
-    const somaliaDate = toSomaliaTime(dateString);
-    return somaliaToUTC(somaliaDate);
+    const [year, month, day] = dateString.split("-").map(Number);
+    // Create UTC date (midnight UTC)
+    return new Date(Date.UTC(year, month - 1, day));
   }
 
-  // For other formats, parse and convert to Somalia time then UTC
+  // For other formats, parse and convert to UTC
   const date = new Date(dateString);
-  const somaliaDate = toSomaliaTime(date);
-  return somaliaToUTC(somaliaDate);
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+  );
 };
 
-// Helper function to format date for display in Somalia timezone (YYYY-MM-DD)
+// Helper function to format date for display (YYYY-MM-DD)
 const formatDateForDisplay = (date) => {
-  const somaliaDate = utcToSomalia(date);
-  return getSomaliaDateStringFromDate(somaliaDate);
+  const utcDate = new Date(date);
+  return utcDate.toISOString().split("T")[0];
 };
 
 // Client routes
@@ -55,8 +52,8 @@ export const createBooking = async (req, res, next) => {
       throw error;
     }
 
-    // Convert date to Somalia timezone then to UTC for storage
-    const utcDate = convertToSomaliaThenUTC(date);
+    // Convert date to UTC
+    const utcDate = convertToUTCDate(date);
 
     // Check if slot is already booked for this date
     const existingBooking = await Booking.findOne({ slotId, date: utcDate });
@@ -66,7 +63,7 @@ export const createBooking = async (req, res, next) => {
       throw error;
     }
 
-    if (!isValidBookingDateInSomalia(date)) {
+    if (!isValidBookingDate(utcDate)) {
       const error = new Error("Cannot book slots for past dates");
       error.statusCode = 400;
       throw error;
@@ -131,9 +128,8 @@ export const createBooking = async (req, res, next) => {
 export const getClientBookings = async (req, res, next) => {
   try {
     const { status } = req.query;
-    const somaliaToday = getSomaliaTime();
-    somaliaToday.setHours(0, 0, 0, 0); // Use Somalia midnight
-    const utcToday = somaliaToUTC(somaliaToday); // Convert to UTC for database query
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0); // Use UTC midnight
 
     let query = {
       clientId: req.user._id,
@@ -141,9 +137,9 @@ export const getClientBookings = async (req, res, next) => {
 
     // Only filter by date if specifically requesting upcoming or past
     if (status === "upcoming") {
-      query.date = { $gte: utcToday };
+      query.date = { $gte: today };
     } else if (status === "past") {
-      query.date = { $lt: utcToday };
+      query.date = { $lt: today };
     }
 
     // Add payment status filter if provided
@@ -185,14 +181,20 @@ function subtractMinutes(time, mins) {
 export const verifyBookingOTP = async (req, res, next) => {
   try {
     const { otp } = req.body;
-    const now = new Date();
-    const currentTime = now.toTimeString().split(" ")[0].slice(0, 5); // HH:MM
-    const today = now.toISOString().split("T")[0]; // YYYY-MM-DD format
+    
+    // Get Somali time instead of server time
+    const somaliTime = getSomaliTime();
+    const currentTime = getSomaliTimeString(); // HH:MM in Somali timezone
+    const today = getSomaliDateString(); // YYYY-MM-DD in Somali timezone
 
-    console.log("🕒 Verification Request:");
+    console.log("🕒 Verification Request (Somali Timezone):");
     console.log("- OTP:", otp);
-    console.log("- Current Time:", currentTime);
-    console.log("- Today:", today);
+    console.log("- Current Somali Time:", currentTime);
+    console.log("- Today (Somali):", today);
+    
+    // Log timezone information for debugging
+    const timezoneInfo = getTimezoneInfo();
+    console.log("- Timezone Info:", timezoneInfo);
 
     // First check if OTP exists and get booking
     const booking = await Booking.findOne({ otp }).populate("slotId");
@@ -238,29 +240,33 @@ export const verifyBookingOTP = async (req, res, next) => {
       throw error;
     }
 
-    // Check if booking is for today
+    // Check if booking is for today (using Somali timezone)
     if (bookingDate !== today) {
       console.log("❌ Error: Date mismatch");
       console.log("- Booking Date:", bookingDate);
-      console.log("- Today:", today);
+      console.log("- Today (Somali):", today);
       const error = new Error(
-        `Access denied. Your booking is for ${bookingDate}, not today (${today})`
+        `Access denied. Your booking is for ${bookingDate}, not today (${today}) in Somali timezone`
       );
       error.statusCode = 400;
       error.code = 4; // Add error code
       throw error;
     }
 
-    // Check if current time is within the slot time (no early access)
-    console.log("\n⏰ Time Comparison:");
-    console.log("- Current Time:", currentTime);
+    // Check if current time is within the slot time (no early access) - using Somali timezone
+    console.log("\n⏰ Time Comparison (Somali Timezone):");
+    console.log("- Current Somali Time:", currentTime);
     console.log("- Slot Time:", `${slotStartTime}-${slotEndTime}`);
 
-    if (currentTime < slotStartTime || currentTime >= slotEndTime) {
+    // Use enhanced time comparison
+    const timeComparison = EnhancedTimezone.compareTimeStrings(currentTime, slotStartTime);
+    const endTimeComparison = EnhancedTimezone.compareTimeStrings(currentTime, slotEndTime);
+
+    if (timeComparison < 0 || endTimeComparison >= 0) {
       console.log("❌ Error: Outside time window");
       const error = new Error(
         `Access denied. Your slot is ${slotStartTime}-${slotEndTime}. ` +
-          `You can only enter during your exact slot time.`
+          `You can only enter during your exact slot time (Somali timezone).`
       );
       error.statusCode = 400;
       error.code = 5; // Add error code
@@ -290,6 +296,8 @@ export const verifyBookingOTP = async (req, res, next) => {
           fullDuration: slotDuration,
           clientId: booking.clientId,
           date: today,
+          timezone: "Africa/Mogadishu", // Include timezone info
+          currentTime: currentTime,
         },
       });
     } else {
@@ -315,7 +323,7 @@ export const verifyBookingOTP = async (req, res, next) => {
 export const getAllBookings = async (req, res, next) => {
   try {
     const { date, search } = req.query;
-    const query = date ? { date: convertToSomaliaThenUTC(date) } : {};
+    const query = date ? { date: convertToUTCDate(date) } : {};
 
     let bookings = await Booking.find(query)
       .populate("clientId", "name phone")
@@ -355,8 +363,8 @@ export const createBookingByManager = async (req, res, next) => {
       throw error;
     }
 
-    // Convert date to Somalia timezone then to UTC for storage
-    const utcDate = convertToSomaliaThenUTC(date);
+    // Convert date to UTC
+    const utcDate = convertToUTCDate(date);
 
     // Check if slot is already booked for this date
     const existingBooking = await Booking.findOne({ slotId, date: utcDate });
@@ -366,7 +374,7 @@ export const createBookingByManager = async (req, res, next) => {
       throw error;
     }
 
-    if (!isValidBookingDateInSomalia(date)) {
+    if (!isValidBookingDate(utcDate)) {
       const error = new Error("Cannot book slots for past dates");
       error.statusCode = 400;
       throw error;
@@ -380,7 +388,7 @@ export const createBookingByManager = async (req, res, next) => {
       amount: slot.price,
       paymentStatus: "paid",
       otp,
-      referenceId: `MGR-${getSomaliaTimestamp()}`,
+      referenceId: `MGR-${Date.now()}`,
     });
 
     res.status(201).json({
@@ -437,8 +445,33 @@ export const deleteBooking = async (req, res, next) => {
   }
 };
 
-// This function is now replaced by isValidBookingDateInSomalia from timezone utils
-// Keeping for backward compatibility but it's no longer used
+// Add this helper function
 const isValidBookingDate = (date) => {
-  return isValidBookingDateInSomalia(date);
+  const bookingDate = new Date(date);
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0); // Use UTC midnight
+  return bookingDate >= today;
+};
+
+// Test endpoint for timezone debugging
+export const testTimezone = async (req, res, next) => {
+  try {
+    const timezoneInfo = getTimezoneInfo();
+    
+    res.status(200).json({
+      success: true,
+      message: "Timezone test endpoint",
+      data: {
+        ...timezoneInfo,
+        testCases: {
+          currentSomaliTime: getSomaliTimeString(),
+          currentSomaliDate: getSomaliDateString(),
+          serverTime: new Date().toISOString(),
+          serverTimeString: new Date().toTimeString(),
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
 };
