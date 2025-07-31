@@ -89,14 +89,15 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
 
-          // Gradient Overlay
+          // Modern Gradient Overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
                 colors: [
-                  Colors.transparent,
+                  Colors.green.shade600.withOpacity(0.7),
+                  Colors.blue.shade600.withOpacity(0.7),
                   Colors.black.withOpacity(0.7),
                 ],
               ),
@@ -129,11 +130,18 @@ class _SplashScreenState extends State<SplashScreen>
                               offset: const Offset(0, 5),
                             ),
                           ],
+                          border: Border.all(
+                            color: Colors.green.shade600,
+                            width: 4,
+                          ),
                         ),
-                        child: Image.asset(
-                          'assets/logo.png',
-                          width: 80,
-                          height: 80,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Image.asset(
+                            'assets/logo.png',
+                            width: 80,
+                            height: 80,
+                          ),
                         ),
                       ),
                     ),
@@ -151,10 +159,16 @@ class _SplashScreenState extends State<SplashScreen>
                             .textTheme
                             .headlineMedium
                             ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 8,
                             ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -168,6 +182,7 @@ class _SplashScreenState extends State<SplashScreen>
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: Colors.white.withOpacity(0.9),
                             letterSpacing: 0.5,
+                            fontWeight: FontWeight.w500,
                           ),
                     ),
                   ),
@@ -181,19 +196,17 @@ class _SplashScreenState extends State<SplashScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green[700],
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          elevation: 5,
-                        ),
-                        child: const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                          elevation: 8,
+                          textStyle: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                        child: const Text('Continue'),
                       ),
                     ),
                   ),

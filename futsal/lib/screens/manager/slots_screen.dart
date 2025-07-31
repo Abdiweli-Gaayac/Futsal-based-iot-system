@@ -259,70 +259,206 @@ class _SlotsScreenState extends State<SlotsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Manage Slots'),
+        title: const Text(
+          'Manage Slots',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.indigo.shade600, Colors.green.shade600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadSlots,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadSlots,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _slots.length,
-                    itemBuilder: (context, index) {
-                      final slot = _slots[index];
-                      return Card(
-                        elevation: 2,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: ListTile(
-                          title: Text(
-                            '${slot.startTime} - ${slot.endTime}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
+      body: Column(
+        children: [
+          _buildModernSearchBar(),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? _buildModernErrorState()
+                    : _slots.isEmpty
+                        ? _buildModernEmptyState()
+                        : RefreshIndicator(
+                            onRefresh: _loadSlots,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _slots.length,
+                              itemBuilder: (context, index) {
+                                final slot = _slots[index];
+                                return _buildModernSlotCard(slot);
+                              },
                             ),
                           ),
-                          subtitle: Text(
-                            'Price: \$${slot.price.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: Colors.green.shade700,
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () => _showSlotDialog(slot),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                color: Colors.red,
-                                onPressed: () => _deleteSlot(slot),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-      floatingActionButton: FloatingActionButton(
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showSlotDialog(),
-        child: const Icon(Icons.add),
+        backgroundColor: Colors.indigo.shade600,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'Add Slot',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernSearchBar() {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Search by time or price...',
+          hintStyle: TextStyle(color: Colors.grey.shade500),
+          prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        ),
+        enabled: false, // No search implemented for slots
+      ),
+    );
+  }
+
+  Widget _buildModernSlotCard(Slot slot) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '${slot.startTime} - ${slot.endTime}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          'Price: \$${slot.price.toStringAsFixed(2)}',
+          style: TextStyle(color: Colors.green.shade700),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _showSlotDialog(slot),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              color: Colors.red,
+              onPressed: () => _deleteSlot(slot),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(
+              Icons.access_time,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No slots found',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Colors.red.shade600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _error!,
+            style: TextStyle(
+              color: Colors.red.shade600,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadSlots,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }

@@ -10,8 +10,13 @@ class SlotService {
       ModelMapper<Slot>((json) => Slot.fromJson(json));
 
   // Public methods
-  Future<Map<String, dynamic>> getPublicSlots() async {
-    final response = await _publicManager.getAll();
+  Future<Map<String, dynamic>> getPublicSlots({String? date}) async {
+    Map<String, dynamic>? queryParams;
+    if (date != null) {
+      queryParams = {'date': date};
+    }
+
+    final response = await _publicManager.getAll(queryParams: queryParams);
     return _mapper.transformResponse(response);
   }
 

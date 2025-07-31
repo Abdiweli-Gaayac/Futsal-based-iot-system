@@ -5,10 +5,12 @@ import { PORT } from "./config/env.js";
 import authRouter from "./routes/auth.routes.js";
 import managerRoutes from "./routes/manager.routes.js";
 import publicRoutes from "./routes/public.routes.js";
+import subscriptionRoutes from "./routes/subscription.routes.js";
 import { testWaafiPayment } from "./controllers/payment-test.controller.js";
 
 import connectToDatabase from "./database/db.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
+import { getSomaliaTime } from "./utils/timezone.js";
 
 const app = express();
 
@@ -21,9 +23,10 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// Add basic request logging
+// Add basic request logging with Somalia timezone
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  const somaliaTime = getSomaliaTime();
+  console.log(`${somaliaTime.toISOString()} (Somalia) - ${req.method} ${req.url}`);
   next();
 });
 app.use(express.json());
@@ -35,6 +38,7 @@ app.get("/test", (req, res) => {
 app.use("/auth", authRouter);
 app.use("/manager", managerRoutes);
 app.use("/public", publicRoutes);
+app.use("/subscriptions", subscriptionRoutes);
 // Error Middleware (should be last)
 app.use(errorMiddleware);
 app.get("/test-payment", testWaafiPayment);

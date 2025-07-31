@@ -9,7 +9,8 @@ class UsersScreen extends StatefulWidget {
   State<UsersScreen> createState() => _UsersScreenState();
 }
 
-class _UsersScreenState extends State<UsersScreen> {
+class _UsersScreenState extends State<UsersScreen>
+    with TickerProviderStateMixin {
   final UserService _userService = UserService();
   List<User> _users = [];
   bool _isLoading = true;
@@ -19,10 +20,30 @@ class _UsersScreenState extends State<UsersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  // Animation controller for list items
+  late AnimationController _listAnimationController;
+  late AnimationController _fabAnimationController;
+
   @override
   void initState() {
     super.initState();
+    _listAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fabAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
     _loadUsers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _listAnimationController.dispose();
+    _fabAnimationController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUsers() async {
@@ -41,6 +62,8 @@ class _UsersScreenState extends State<UsersScreen> {
           _users = response['data'] as List<User>;
           _isLoading = false;
         });
+        _listAnimationController.forward();
+        _fabAnimationController.forward();
       } else {
         setState(() {
           _error = response['message'];
@@ -67,7 +90,29 @@ class _UsersScreenState extends State<UsersScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text(user == null ? 'Add New User' : 'Edit User'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  user == null ? Icons.person_add : Icons.edit,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                user == null ? 'Add New User' : 'Edit User',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
           content: SingleChildScrollView(
             child: Form(
               key: _formKey,
@@ -77,9 +122,22 @@ class _UsersScreenState extends State<UsersScreen> {
                   // Name Field
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Name',
-                      prefixIcon: Icon(Icons.person),
+                      prefixIcon: const Icon(Icons.person),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                          width: 2,
+                        ),
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -93,9 +151,22 @@ class _UsersScreenState extends State<UsersScreen> {
                   // Phone Field
                   TextFormField(
                     controller: _phoneController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Phone',
-                      prefixIcon: Icon(Icons.phone),
+                      prefixIcon: const Icon(Icons.phone),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                          width: 2,
+                        ),
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -114,6 +185,19 @@ class _UsersScreenState extends State<UsersScreen> {
                       decoration: InputDecoration(
                         labelText: 'Password',
                         prefixIcon: const Icon(Icons.lock),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).primaryColor,
+                            width: 2,
+                          ),
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(_obscurePassword
                               ? Icons.visibility
@@ -137,9 +221,22 @@ class _UsersScreenState extends State<UsersScreen> {
                   // Role Dropdown
                   DropdownButtonFormField<String>(
                     value: _roleController.text,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Role',
-                      prefixIcon: Icon(Icons.admin_panel_settings),
+                      prefixIcon: const Icon(Icons.admin_panel_settings),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                          width: 2,
+                        ),
+                      ),
                     ),
                     items: const [
                       DropdownMenuItem(
@@ -170,6 +267,11 @@ class _UsersScreenState extends State<UsersScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey.shade600,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
@@ -199,6 +301,10 @@ class _UsersScreenState extends State<UsersScreen> {
                               ? 'User created successfully'
                               : 'User updated successfully'),
                           backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       );
                     } else {
@@ -206,13 +312,26 @@ class _UsersScreenState extends State<UsersScreen> {
                         SnackBar(
                           content: Text(response['message']),
                           backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       );
                     }
                   }
                 }
               },
-              child: Text(user == null ? 'Add' : 'Update'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Text(user == null ? 'Add User' : 'Update User'),
             ),
           ],
         ),
@@ -224,18 +343,46 @@ class _UsersScreenState extends State<UsersScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.delete_outline,
+                color: Colors.red.shade600,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Confirm Delete',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
         content: const Text('Are you sure you want to delete this user?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey.shade600,
+            ),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Delete'),
           ),
@@ -249,9 +396,13 @@ class _UsersScreenState extends State<UsersScreen> {
         if (response['success']) {
           _loadUsers();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('User deleted successfully'),
+            SnackBar(
+              content: const Text('User deleted successfully'),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           );
         } else {
@@ -259,6 +410,10 @@ class _UsersScreenState extends State<UsersScreen> {
             SnackBar(
               content: Text(response['message']),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           );
         }
@@ -267,16 +422,29 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    return Container(
+      margin: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Search by name or phone...',
-          prefixIcon: const Icon(Icons.search),
+          hintStyle: TextStyle(color: Colors.grey.shade500),
+          prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon: Icon(Icons.clear, color: Colors.grey.shade500),
                   onPressed: () {
                     _searchController.clear();
                     setState(() {
@@ -286,9 +454,9 @@ class _UsersScreenState extends State<UsersScreen> {
                   },
                 )
               : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         ),
         onChanged: (value) {
           setState(() {
@@ -305,11 +473,205 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
+  Widget _buildUserCard(User user, int index) {
+    return AnimatedBuilder(
+      animation: _listAnimationController,
+      builder: (context, child) {
+        final slideAnimation = Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: _listAnimationController,
+          curve: Interval(
+            (index * 0.1).clamp(0.0, 1.0),
+            ((index * 0.1) + 0.3).clamp(0.0, 1.0),
+            curve: Curves.easeOutCubic,
+          ),
+        ));
+
+        return SlideTransition(
+          position: slideAnimation,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => _showUserDialog(user),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      // Avatar
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: user.role == 'manager'
+                                ? [Colors.blue.shade400, Colors.blue.shade600]
+                                : [
+                                    Colors.green.shade400,
+                                    Colors.green.shade600
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (user.role == 'manager'
+                                      ? Colors.blue
+                                      : Colors.green)
+                                  .withOpacity(0.3),
+                              spreadRadius: 2,
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            user.name[0].toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+
+                      // User info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.phone,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: user.role == 'manager'
+                                      ? [
+                                          Colors.blue.shade50,
+                                          Colors.blue.shade100
+                                        ]
+                                      : [
+                                          Colors.green.shade50,
+                                          Colors.green.shade100
+                                        ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                user.role.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: user.role == 'manager'
+                                      ? Colors.blue.shade700
+                                      : Colors.green.shade700,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Action buttons
+                      Column(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: IconButton(
+                              icon:
+                                  Icon(Icons.edit, color: Colors.blue.shade600),
+                              onPressed: () => _showUserDialog(user),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: IconButton(
+                              icon: Icon(Icons.delete,
+                                  color: Colors.red.shade600),
+                              onPressed: () => _deleteUser(user),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Manage Users'),
+        title: const Text(
+          'Manage Users',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue.shade600, Colors.purple.shade600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -322,10 +684,36 @@ class _UsersScreenState extends State<UsersScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(_error!),
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: Colors.red.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _error!,
+                              style: TextStyle(
+                                color: Colors.red.shade600,
+                                fontSize: 16,
+                              ),
+                            ),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _loadUsers,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade600,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                               child: const Text('Retry'),
                             ),
                           ],
@@ -336,10 +724,17 @@ class _UsersScreenState extends State<UsersScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.person_off,
-                                  size: 64,
-                                  color: Colors.grey.shade400,
+                                Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Icon(
+                                    Icons.person_off,
+                                    size: 64,
+                                    color: Colors.grey.shade400,
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -357,78 +752,12 @@ class _UsersScreenState extends State<UsersScreen> {
                         : RefreshIndicator(
                             onRefresh: _loadUsers,
                             child: ListView.builder(
-                              padding: const EdgeInsets.all(16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
                               itemCount: _users.length,
                               itemBuilder: (context, index) {
                                 final user = _users[index];
-                                return Card(
-                                  elevation: 2,
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.green.shade100,
-                                      child: Text(
-                                        user.name[0].toUpperCase(),
-                                        style: TextStyle(
-                                          color: Colors.green.shade700,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      user.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(user.phone),
-                                        Container(
-                                          margin: const EdgeInsets.only(top: 4),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: user.role == 'manager'
-                                                ? Colors.blue.shade100
-                                                : Colors.green.shade100,
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            user.role.toUpperCase(),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: user.role == 'manager'
-                                                  ? Colors.blue.shade700
-                                                  : Colors.green.shade700,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit),
-                                          onPressed: () =>
-                                              _showUserDialog(user),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete),
-                                          color: Colors.red,
-                                          onPressed: () => _deleteUser(user),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
+                                return _buildUserCard(user, index);
                               },
                             ),
                           ),
@@ -436,17 +765,23 @@ class _UsersScreenState extends State<UsersScreen> {
         ],
       ),
       floatingActionButton: _searchQuery.isEmpty
-          ? FloatingActionButton(
-              onPressed: () => _showUserDialog(),
-              child: const Icon(Icons.add),
+          ? ScaleTransition(
+              scale: _fabAnimationController,
+              child: FloatingActionButton.extended(
+                onPressed: () => _showUserDialog(),
+                backgroundColor: Colors.blue.shade600,
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text(
+                  'Add User',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
             )
-          : null, // Hide FAB during search
+          : null,
     );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 }

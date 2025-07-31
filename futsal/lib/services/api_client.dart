@@ -11,7 +11,7 @@ class ApiClient {
 
   ApiClient._internal() {
     _dio = Dio(BaseOptions(
-      baseUrl: 'http://192.168.100.75:5500',
+      baseUrl: 'http://localhost:5500',
       validateStatus: (status) => true, // Handle all status codes ourselves
       // Remove timeouts to allow long-running requests
     ));

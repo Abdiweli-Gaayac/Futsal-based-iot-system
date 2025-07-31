@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:futsal/providers/auth_provider.dart';
 import 'package:futsal/screens/client/slots_screen.dart';
 import 'package:futsal/screens/client/my_bookings_screen.dart';
+import 'package:futsal/screens/client/subscriptions_screen.dart';
 
 class ClientDashboard extends StatefulWidget {
   const ClientDashboard({super.key});
@@ -26,6 +27,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
     return [
       const SlotsScreen(),
       const MyBookingsScreen(),
+      const SubscriptionsScreen(),
       const ProfileScreen(),
     ];
   }
@@ -45,6 +47,12 @@ class _ClientDashboardState extends State<ClientDashboard> {
         inactiveColorPrimary: Colors.grey,
       ),
       PersistentBottomNavBarItem(
+        icon: const Icon(Icons.subscriptions),
+        title: "Subscriptions",
+        activeColorPrimary: Colors.green,
+        inactiveColorPrimary: Colors.grey,
+      ),
+      PersistentBottomNavBarItem(
         icon: const Icon(Icons.person),
         title: "Profile",
         activeColorPrimary: Colors.green,
@@ -55,25 +63,15 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    if (!authProvider.isAuthenticated || authProvider.isManager) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, '/login');
-      });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     return PersistentTabView(
       context,
       controller: _controller,
       screens: _buildScreens(),
       items: _navBarsItems(),
-      // confineInSafeArea: true,
       backgroundColor: Colors.white,
       handleAndroidBackButtonPress: true,
       resizeToAvoidBottomInset: true,
       stateManagement: true,
-      // hideNavigationBarWhenKeyboardShows: true,
       decoration: NavBarDecoration(
         borderRadius: BorderRadius.circular(10.0),
         colorBehindNavBar: Colors.white,
@@ -85,24 +83,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
           ),
         ],
       ),
-      // popAllScreensOnTapOfSelectedTab: true,
-      // popActionScreens: PopActionScreensType.all,
-      // itemAnimationProperties: const ItemAnimationProperties(
-      //   duration: Duration(milliseconds: 200),
-      //   curve: Curves.ease,
-      // ),
-      // screenTransitionAnimation: const ScreenTransitionAnimation(
-      //   animateTabTransition: true,
-      //   curve: Curves.ease,
-      //   duration: Duration(milliseconds: 200),
-      // ),
       navBarStyle: NavBarStyle.style6,
     );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 }

@@ -8,8 +8,8 @@ import {
 
 export const testWaafiPayment = async (req, res) => {
   try {
-    const phone = "616135469"; // Use provided or default number
-    const amount = 100.0; // Use provided or default amount
+    const phone = "0619858211"; // Use provided or default number
+    const amount = 10.0; // Use provided or default amount
     const testBookingId = "TEST-" + Date.now();
 
     // Create a unique reference ID for this transaction

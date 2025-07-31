@@ -36,6 +36,15 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       unique: true,
     },
+    // New fields for subscription support
+    isSubscriptionBooking: {
+      type: Boolean,
+      default: false,
+    },
+    subscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subscription",
+    },
   },
   { timestamps: true }
 );

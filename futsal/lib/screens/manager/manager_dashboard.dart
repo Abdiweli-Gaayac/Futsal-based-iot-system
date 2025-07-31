@@ -6,6 +6,8 @@ import 'package:futsal/providers/auth_provider.dart';
 import 'package:futsal/screens/manager/slots_screen.dart';
 import 'package:futsal/screens/manager/users_screen.dart';
 import 'package:futsal/screens/manager/bookings_screen.dart';
+import 'package:futsal/screens/manager/subscriptions_screen.dart';
+import 'package:futsal/screens/manager/analytics_screen.dart';
 
 class ManagerDashboard extends StatefulWidget {
   const ManagerDashboard({super.key});
@@ -25,15 +27,23 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
 
   List<Widget> _buildScreens() {
     return [
+      const AnalyticsScreen(),
       const SlotsScreen(),
       const UsersScreen(),
       const BookingsScreen(),
+      const ManagerSubscriptionsScreen(),
       const ProfileScreen(),
     ];
   }
 
   List<PersistentBottomNavBarItem> _navBarsItems() {
     return [
+      PersistentBottomNavBarItem(
+        icon: const Icon(Icons.analytics),
+        title: "Dashboard",
+        activeColorPrimary: Colors.green,
+        inactiveColorPrimary: Colors.grey,
+      ),
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.access_time),
         title: "Slots",
@@ -49,6 +59,12 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       PersistentBottomNavBarItem(
         icon: const Icon(Icons.book_online),
         title: "Bookings",
+        activeColorPrimary: Colors.green,
+        inactiveColorPrimary: Colors.grey,
+      ),
+      PersistentBottomNavBarItem(
+        icon: const Icon(Icons.subscriptions),
+        title: "Subscriptions",
         activeColorPrimary: Colors.green,
         inactiveColorPrimary: Colors.grey,
       ),

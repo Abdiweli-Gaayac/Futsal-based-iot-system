@@ -116,12 +116,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = authProvider.user;
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green.shade600, Colors.blue.shade600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
           if (!_isEditing)
             IconButton(
-              icon: const Icon(Icons.edit),
+              icon: const Icon(Icons.edit, color: Colors.white),
               onPressed: () => setState(() => _isEditing = true),
             ),
         ],
@@ -132,16 +150,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Profile Avatar
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.green.shade100,
-              child: Text(
-                user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                style: const TextStyle(fontSize: 40, color: Colors.green),
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+                border: Border.all(
+                  color: Colors.green.shade600,
+                  width: 3,
+                ),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.green.shade100,
+                child: Text(
+                  user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                  style: const TextStyle(fontSize: 40, color: Colors.green),
+                ),
               ),
             ),
             const SizedBox(height: 24),
-
             // Role Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -158,7 +192,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 32),
-
             // Profile Form
             Form(
               key: _formKey,
@@ -172,7 +205,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       labelText: 'Name',
                       prefixIcon: const Icon(Icons.person),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     validator: (value) {
@@ -183,7 +216,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-
                   // Phone Field
                   TextFormField(
                     controller: _phoneController,
@@ -192,7 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       labelText: 'Phone',
                       prefixIcon: const Icon(Icons.phone),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     validator: (value) {
@@ -203,7 +235,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-
                   if (_isEditing) ...[
                     // Current Password Field
                     TextFormField(
@@ -221,12 +252,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   !_obscureCurrentPassword),
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     // New Password Field
                     TextFormField(
                       controller: _newPasswordController,
@@ -242,12 +272,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               () => _obscureNewPassword = !_obscureNewPassword),
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     // Update Button
                     SizedBox(
                       width: double.infinity,
@@ -257,7 +286,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.green.shade700,
+                          foregroundColor: Colors.white,
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         child: authProvider.isLoading
@@ -266,7 +301,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     // Cancel Button
                     SizedBox(
                       width: double.infinity,
@@ -277,24 +311,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _currentPasswordController.clear();
                           _newPasswordController.clear();
                         },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey.shade700,
+                          textStyle:
+                              const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         child: const Text('Cancel'),
                       ),
                     ),
                   ],
-
                   const SizedBox(height: 24),
-
                   // Logout Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _showLogoutDialog,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                        backgroundColor: Colors.red.shade600,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
                       ),
                       child: const Text('Logout'),

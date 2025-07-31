@@ -37,8 +37,51 @@ function validateSlotTimes(startTime, endTime) {
 // Public routes
 export const getPublicSlots = async (req, res, next) => {
   try {
+    const { date } = req.query;
     const slots = await Slot.find().sort({ startTime: 1 });
-    res.status(200).json({ success: true, data: slots });
+
+    // If date is provided, check booking status for each slot
+    if (date) {
+      const selectedDate = new Date(date);
+      selectedDate.setHours(0, 0, 0, 0);
+
+      // Get all bookings for the selected date
+      const bookings = await Booking.find({
+        date: {
+          $gte: selectedDate,
+          $lt: new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000),
+        },
+      }).populate("clientId", "name");
+
+      // Create a map of slotId to booking info
+      const bookingMap = new Map();
+      bookings.forEach((booking) => {
+        bookingMap.set(booking.slotId.toString(), {
+          isBooked: true,
+          bookedBy: booking.clientId?.name || "Unknown",
+          paymentStatus: booking.paymentStatus,
+          isSubscriptionBooking: booking.isSubscriptionBooking,
+        });
+      });
+
+      // Add booking status to each slot
+      const slotsWithBookingStatus = slots.map((slot) => {
+        const bookingInfo = bookingMap.get(slot._id.toString());
+        return {
+          ...slot.toObject(),
+          isBooked: bookingInfo ? bookingInfo.isBooked : false,
+          bookedBy: bookingInfo ? bookingInfo.bookedBy : null,
+          paymentStatus: bookingInfo ? bookingInfo.paymentStatus : null,
+          isSubscriptionBooking: bookingInfo
+            ? bookingInfo.isSubscriptionBooking
+            : false,
+        };
+      });
+
+      res.status(200).json({ success: true, data: slotsWithBookingStatus });
+    } else {
+      res.status(200).json({ success: true, data: slots });
+    }
   } catch (error) {
     next(error);
   }

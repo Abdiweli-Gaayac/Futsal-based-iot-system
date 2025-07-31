@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import DeviceLog from "./models/deviceLog.model.js"; // Adjust the path as necessary
 import Device from "./models/device.model.js"; // Adjust the path as necessary
+import { getSomaliaTime } from "./utils/timezone.js";
 
 // Function to clean up device logs
 export const cleanupDeviceLogs = async () => {
@@ -8,8 +9,8 @@ export const cleanupDeviceLogs = async () => {
     const devices = await DeviceLog.distinct("device"); // Get unique device IDs
 
     for (const deviceId of devices) {
-      // Get the current time in UTC and calculate the start of the current 15-minute interval
-      const now = new Date(); // This will be in UTC
+      // Get the current time in Somalia timezone and calculate the start of the current 15-minute interval
+      const now = getSomaliaTime(); // This will be in Somalia timezone
       const currentIntervalStart = new Date(
         now.getTime() - (now.getMinutes() % 15) * 60000
       ); // Start of the current interval

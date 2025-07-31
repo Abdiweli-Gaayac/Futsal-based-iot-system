@@ -25,7 +25,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   // Add new variables for search
   final TextEditingController _searchController = TextEditingController();
-  List<Booking> _filteredBookings = [];
   String _searchQuery = '';
 
   @override
@@ -53,13 +52,11 @@ class _BookingsScreenState extends State<BookingsScreen> {
           _bookings = (response['data'] as List<Booking>)
             ..sort((a, b) {
               // First sort by date
-              final dateCompare =
-                  DateTime.parse(a.date).compareTo(DateTime.parse(b.date));
+              final dateCompare = a.localDate.compareTo(b.localDate);
               if (dateCompare != 0) return dateCompare;
               // Then by time if same date
               return a.slot!.startTime.compareTo(b.slot!.startTime);
             });
-          _filteredBookings = _bookings;
           _isLoading = false;
         });
       } else {
@@ -105,6 +102,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 
   Future<void> _showBookingDetails(Booking booking) async {
+    final bookingDate = booking.localDate;
+
     await showDialog(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
@@ -115,9 +114,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildDetailRow(
-                  'Date',
-                  DateFormat('MMM dd, yyyy')
-                      .format(DateTime.parse(booking.date))),
+                  'Date', DateFormat('MMM dd, yyyy').format(bookingDate)),
               _buildDetailRow('Time',
                   '${booking.slot!.startTime} - ${booking.slot!.endTime}'),
               _buildDetailRow('Client', booking.client!.name),
@@ -557,27 +554,64 @@ class _BookingsScreenState extends State<BookingsScreen> {
     );
   }
 
+  List<Booking> get _filteredBookings {
+    if (_searchQuery.isEmpty) {
+      return _bookings;
+    }
+    final lowerCaseQuery = _searchQuery.toLowerCase();
+    return _bookings.where((booking) {
+      return booking.client?.name.toLowerCase().contains(lowerCaseQuery) ==
+              true ||
+          booking.client?.phone.contains(_searchQuery) == true ||
+          booking.slot?.startTime.contains(_searchQuery) == true ||
+          booking.slot?.endTime.contains(_searchQuery) == true ||
+          booking.paymentStatus.toLowerCase().contains(lowerCaseQuery) == true;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Manage Bookings'),
+        title: const Text(
+          'Manage Bookings',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green.shade600, Colors.blue.shade600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: _searchQuery.isEmpty
-                ? _selectDate
-                : null, // Disable date selection during search
+            icon: const Icon(Icons.calendar_today, color: Colors.white),
+            onPressed: _searchQuery.isEmpty ? _selectDate : null,
+            tooltip: 'Select Date',
           ),
         ],
       ),
       body: Column(
         children: [
-          // Show date selector only when not searching
           if (_searchQuery.isEmpty)
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.green.shade50,
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -596,50 +630,14 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 ],
               ),
             ),
-
-          _buildSearchBar(),
-
-          // Bookings list with search results
+          _buildModernSearchBar(),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(_error!),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadBookings,
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      )
+                    ? _buildModernErrorState()
                     : _filteredBookings.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.event_busy,
-                                  size: 64,
-                                  color: Colors.grey.shade400,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _searchQuery.isEmpty
-                                      ? 'No bookings found for this date'
-                                      : 'No bookings match your search',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
+                        ? _buildModernEmptyState()
                         : RefreshIndicator(
                             onRefresh: _loadBookings,
                             child: ListView.builder(
@@ -647,86 +645,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
                               itemCount: _filteredBookings.length,
                               itemBuilder: (context, index) {
                                 final booking = _filteredBookings[index];
-                                return Card(
-                                  elevation: 2,
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  child: ListTile(
-                                    onTap: () => _showBookingDetails(booking),
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.green.shade100,
-                                      child: Text(
-                                        booking.client!.name[0].toUpperCase(),
-                                        style: TextStyle(
-                                          color: Colors.green.shade700,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      '${booking.slot!.startTime} - ${booking.slot!.endTime}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(booking.client!.name),
-                                        const SizedBox(height: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Color(
-                                              int.parse(
-                                                    _getStatusColor(booking
-                                                            .paymentStatus)
-                                                        .substring(1),
-                                                    radix: 16,
-                                                  ) |
-                                                  0x33000000,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            booking.paymentStatus.toUpperCase(),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Color(
-                                                int.parse(
-                                                      _getStatusColor(booking
-                                                              .paymentStatus)
-                                                          .substring(1),
-                                                      radix: 16,
-                                                    ) |
-                                                    0xFF000000,
-                                              ),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit),
-                                          onPressed: () =>
-                                              _showBookingDialog(booking),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete),
-                                          color: Colors.red,
-                                          onPressed: () =>
-                                              _deleteBooking(booking),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
+                                final bookingDate = booking.localDate;
+                                return _buildModernBookingCard(
+                                    booking, bookingDate);
                               },
                             ),
                           ),
@@ -734,11 +655,280 @@ class _BookingsScreenState extends State<BookingsScreen> {
         ],
       ),
       floatingActionButton: _searchQuery.isEmpty
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               onPressed: () => _showBookingDialog(),
-              child: const Icon(Icons.add),
+              backgroundColor: Colors.green.shade600,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'Add Booking',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
             )
-          : null, // Hide FAB during search
+          : null,
+    );
+  }
+
+  Widget _buildModernSearchBar() {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search by client name, phone, or time...',
+          hintStyle: TextStyle(color: Colors.grey.shade500),
+          prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: Colors.grey.shade500),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                      _loadBookings();
+                    });
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        ),
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (_searchQuery == value) {
+                _loadBookings();
+              }
+            });
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildModernBookingCard(Booking booking, DateTime bookingDate) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _showBookingDetails(booking),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Date and time info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        DateFormat('MMMM dd, yyyy').format(bookingDate),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${booking.slot!.startTime} - ${booking.slot!.endTime}',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Client and status info
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      booking.client?.name ?? 'Unknown',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: booking.paymentStatus == 'paid'
+                            ? Colors.green.shade100
+                            : Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        booking.paymentStatus.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: booking.paymentStatus == 'paid'
+                              ? Colors.green.shade700
+                              : Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ' \$${booking.amount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    if (booking.otp != null && !booking.isUsed) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'OTP: ${booking.otp!}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (booking.isUsed) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'USED',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(
+              Icons.event_busy,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _searchQuery.isEmpty
+                ? 'No bookings found for this date'
+                : 'No bookings match your search',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Colors.red.shade600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _error!,
+            style: TextStyle(
+              color: Colors.red.shade600,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadBookings,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
 

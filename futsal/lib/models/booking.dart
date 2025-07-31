@@ -1,5 +1,6 @@
 import 'package:futsal/models/slot.dart';
 import 'package:futsal/models/user.dart';
+import 'package:futsal/utils/timezone.dart';
 
 class Booking {
   final String id;
@@ -29,6 +30,31 @@ class Booking {
     this.slot,
     this.client,
   });
+
+  // Helper method to get Somalia date from UTC date string
+  DateTime get somaliaDate {
+    // Parse the UTC date string and convert to Somalia timezone
+    final utcDate = DateTime.parse(date);
+    return SomaliaTimezone.utcToSomalia(utcDate);
+  }
+
+  // Helper method to get date string in YYYY-MM-DD format for Somalia timezone
+  String get somaliaDateString {
+    final somalia = somaliaDate;
+    return '${somalia.year.toString().padLeft(4, '0')}-'
+        '${somalia.month.toString().padLeft(2, '0')}-'
+        '${somalia.day.toString().padLeft(2, '0')}';
+  }
+
+  // Helper method to get local date from UTC date string (for backward compatibility)
+  DateTime get localDate {
+    return somaliaDate;
+  }
+
+  // Helper method to get date string in YYYY-MM-DD format for local timezone (for backward compatibility)
+  String get localDateString {
+    return somaliaDateString;
+  }
 
   factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(

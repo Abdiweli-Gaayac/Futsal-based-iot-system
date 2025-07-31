@@ -3,6 +3,43 @@ import Slot from "../models/slot.model.js";
 import { initiateWaafiPayment } from "../services/payment.service.js";
 import { generateOTP } from "../utils/otp.js";
 import User from "../models/user.model.js";
+import { 
+  getSomaliaTime, 
+  toSomaliaTime, 
+  somaliaToUTC, 
+  utcToSomalia, 
+  getSomaliaDateString, 
+  getSomaliaDateStringFromDate, 
+  isTodayInSomalia, 
+  isPastDateInSomalia, 
+  isValidBookingDateInSomalia,
+  getSomaliaTimestamp
+} from "../utils/timezone.js";
+
+// Helper function to convert date string to Somalia timezone and then to UTC for storage
+const convertToSomaliaThenUTC = (dateString) => {
+  // If dateString is already a Date object, convert it to Somalia time then UTC
+  if (dateString instanceof Date) {
+    return somaliaToUTC(toSomaliaTime(dateString));
+  }
+
+  // If it's a string in YYYY-MM-DD format, create Somalia date then convert to UTC
+  if (typeof dateString === "string" && dateString.includes("-")) {
+    const somaliaDate = toSomaliaTime(dateString);
+    return somaliaToUTC(somaliaDate);
+  }
+
+  // For other formats, parse and convert to Somalia time then UTC
+  const date = new Date(dateString);
+  const somaliaDate = toSomaliaTime(date);
+  return somaliaToUTC(somaliaDate);
+};
+
+// Helper function to format date for display in Somalia timezone (YYYY-MM-DD)
+const formatDateForDisplay = (date) => {
+  const somaliaDate = utcToSomalia(date);
+  return getSomaliaDateStringFromDate(somaliaDate);
+};
 
 // Client routes
 export const createBooking = async (req, res, next) => {
@@ -18,27 +55,32 @@ export const createBooking = async (req, res, next) => {
       throw error;
     }
 
+    // Convert date to Somalia timezone then to UTC for storage
+    const utcDate = convertToSomaliaThenUTC(date);
+
     // Check if slot is already booked for this date
-    const existingBooking = await Booking.findOne({ slotId, date });
+    const existingBooking = await Booking.findOne({ slotId, date: utcDate });
     if (existingBooking) {
       const error = new Error("Slot is already booked for this date");
       error.statusCode = 400;
       throw error;
     }
 
-    if (!isValidBookingDate(date)) {
+    if (!isValidBookingDateInSomalia(date)) {
       const error = new Error("Cannot book slots for past dates");
       error.statusCode = 400;
       throw error;
     }
 
     // Create booking with pending payment status
+    const otp = generateOTP();
     const booking = await Booking.create({
       clientId,
       slotId,
-      date,
+      date: utcDate, // Store in UTC
       amount: slot.price,
       paymentStatus: "pending",
+      otp,
     });
 
     try {
@@ -71,6 +113,7 @@ export const createBooking = async (req, res, next) => {
             status: "success",
             transactionId: paymentResult.data.params?.orderId,
           },
+          otp: otp, // Include OTP in response for access
         },
       });
     } catch (paymentError) {
@@ -88,8 +131,9 @@ export const createBooking = async (req, res, next) => {
 export const getClientBookings = async (req, res, next) => {
   try {
     const { status } = req.query;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const somaliaToday = getSomaliaTime();
+    somaliaToday.setHours(0, 0, 0, 0); // Use Somalia midnight
+    const utcToday = somaliaToUTC(somaliaToday); // Convert to UTC for database query
 
     let query = {
       clientId: req.user._id,
@@ -97,9 +141,9 @@ export const getClientBookings = async (req, res, next) => {
 
     // Only filter by date if specifically requesting upcoming or past
     if (status === "upcoming") {
-      query.date = { $gte: today };
+      query.date = { $gte: utcToday };
     } else if (status === "past") {
-      query.date = { $lt: today };
+      query.date = { $lt: utcToday };
     }
 
     // Add payment status filter if provided
@@ -161,7 +205,7 @@ export const verifyBookingOTP = async (req, res, next) => {
       throw error;
     }
 
-    const bookingDate = booking.date.toISOString().split("T")[0];
+    const bookingDate = formatDateForDisplay(booking.date);
 
     // Get time values
     const slotStartTime = booking.slotId.startTime;
@@ -266,11 +310,12 @@ export const verifyBookingOTP = async (req, res, next) => {
     });
   }
 };
+
 // Manager routes
 export const getAllBookings = async (req, res, next) => {
   try {
     const { date, search } = req.query;
-    const query = date ? { date: new Date(date) } : {};
+    const query = date ? { date: convertToSomaliaThenUTC(date) } : {};
 
     let bookings = await Booking.find(query)
       .populate("clientId", "name phone")
@@ -310,15 +355,18 @@ export const createBookingByManager = async (req, res, next) => {
       throw error;
     }
 
+    // Convert date to Somalia timezone then to UTC for storage
+    const utcDate = convertToSomaliaThenUTC(date);
+
     // Check if slot is already booked for this date
-    const existingBooking = await Booking.findOne({ slotId, date });
+    const existingBooking = await Booking.findOne({ slotId, date: utcDate });
     if (existingBooking) {
       const error = new Error("Slot is already booked for this date");
       error.statusCode = 400;
       throw error;
     }
 
-    if (!isValidBookingDate(date)) {
+    if (!isValidBookingDateInSomalia(date)) {
       const error = new Error("Cannot book slots for past dates");
       error.statusCode = 400;
       throw error;
@@ -328,11 +376,11 @@ export const createBookingByManager = async (req, res, next) => {
     const booking = await Booking.create({
       clientId,
       slotId,
-      date,
+      date: utcDate, // Store in UTC
       amount: slot.price,
       paymentStatus: "paid",
       otp,
-      referenceId: `MGR-${Date.now()}`,
+      referenceId: `MGR-${getSomaliaTimestamp()}`,
     });
 
     res.status(201).json({
@@ -389,10 +437,8 @@ export const deleteBooking = async (req, res, next) => {
   }
 };
 
-// Add this helper function
+// This function is now replaced by isValidBookingDateInSomalia from timezone utils
+// Keeping for backward compatibility but it's no longer used
 const isValidBookingDate = (date) => {
-  const bookingDate = new Date(date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return bookingDate >= today;
+  return isValidBookingDateInSomalia(date);
 };
